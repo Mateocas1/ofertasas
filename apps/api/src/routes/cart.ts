@@ -16,22 +16,22 @@ async function calculatePriceChange(productId: number, supermarketId: number, st
         supermarketId: supermarketId
       },
       orderBy: {
-        createdAt: 'desc'
+        recordedAt: 'desc'
       },
       select: {
-        price: true
+        sellingPrice: true
       }
     });
     
-    if (!latestPrice) return null;
+    if (!latestPrice || latestPrice.sellingPrice === null) return null;
     
     // Compare prices and return change info if different
-    if (latestPrice.price !== storedPrice) {
-      const priceDifference = latestPrice.price - storedPrice;
+    if (latestPrice.sellingPrice !== storedPrice) {
+      const priceDifference = latestPrice.sellingPrice - storedPrice;
       return {
         direction: priceDifference > 0 ? 'up' : 'down',
         oldPrice: storedPrice,
-        newPrice: latestPrice.price,
+        newPrice: latestPrice.sellingPrice,
         difference: Math.abs(priceDifference)
       };
     }
@@ -76,8 +76,7 @@ export async function cartRoutes(app: FastifyInstance): Promise<void> {
       if (!cart) {
         cart = await prisma.cart.create({
           data: {
-            sessionId,
-            items: []
+            sessionId
           },
           include: {
             items: {

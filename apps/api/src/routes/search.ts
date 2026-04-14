@@ -81,27 +81,6 @@ function groupProductsByEan(storeResults: StoreResult[]): { groupedProducts: Gro
   
   return { groupedProducts: result, failures };
 }
-  
-  // Convert map to array and find cheapest store for each product
-  const result: GroupedProduct[] = [];
-  for (const groupedProduct of productMap.values()) {
-    // Find cheapest store
-    let cheapestStore = "";
-    let cheapestPrice = Infinity;
-    
-    for (const [store, priceInfo] of Object.entries(groupedProduct.prices)) {
-      if (priceInfo.price && priceInfo.price < cheapestPrice) {
-        cheapestPrice = priceInfo.price;
-        cheapestStore = store;
-      }
-    }
-    
-    groupedProduct.cheapest = cheapestStore;
-    result.push(groupedProduct);
-  }
-  
-  return result;
-}
 
 /**
  * Gets the cache key for a search query

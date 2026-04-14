@@ -1,7 +1,6 @@
 import { Queue, type Job } from "bullmq";
 import { chromium, type Page } from "playwright";
-import { VTEX_STORES } from "@ofertasas/vtex-client";
-import { saveHash } from "@ofertasas/vtex-client/src/hash-manager.js";
+import { VTEX_STORES, saveHash } from "@ofertasas/vtex-client";
 import redis from "../lib/redis.js";
 import { PrismaClient } from "@prisma/client";
 

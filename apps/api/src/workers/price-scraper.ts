@@ -1,7 +1,6 @@
 import { Queue, type Job } from "bullmq";
-import { fetchVtexProducts, VTEX_STORES } from "@ofertasas/vtex-client";
+import { fetchVtexProducts, VTEX_STORES, getManagedHash as getHash, saveHash } from "@ofertasas/vtex-client";
 import { PrismaClient } from "@prisma/client";
-import { getHash, saveHash } from "@ofertasas/vtex-client/hash-manager";
 
 const prisma = new PrismaClient();
 
@@ -73,7 +72,7 @@ export async function runPriceScraper(): Promise<void> {
               
               // Only save if price has changed or there's no previous record
               if (!lastPrice || 
-                  lastPrice.sellingPrice !== vtexProduct.sellingPrice || 
+                  lastPrice.sellingPrice !== vtexProduct.price || 
                   lastPrice.listPrice !== vtexProduct.listPrice) {
                 
                 // Create Price record
@@ -81,7 +80,7 @@ export async function runPriceScraper(): Promise<void> {
                   data: {
                     productId: product.id,
                     supermarketId: supermarket.id,
-                    sellingPrice: vtexProduct.sellingPrice,
+                    sellingPrice: vtexProduct.price,
                     listPrice: vtexProduct.listPrice,
                     referencePrice: vtexProduct.referencePrice,
                     isAvailable: vtexProduct.isAvailable,
@@ -110,9 +109,7 @@ export async function runPriceScraper(): Promise<void> {
                     await prisma.promotion.update({
                       where: { id: existingPromo.id },
                       data: {
-                        isActive: true,
-                        startsAt: promo.startsAt,
-                        endsAt: promo.endsAt
+                        isActive: true
                       }
                     });
                   } else {
@@ -123,12 +120,10 @@ export async function runPriceScraper(): Promise<void> {
                         supermarketId: supermarket.id,
                         type: promo.type,
                         description: promo.description,
-                        conditions: promo.conditions,
+                        conditions: promo.conditions as any,
                         discountValue: promo.discountValue,
                         walletProvider: promo.walletProvider,
-                        isActive: true,
-                        startsAt: promo.startsAt,
-                        endsAt: promo.endsAt
+                        isActive: true
                       }
                     });
                   }
@@ -137,20 +132,18 @@ export async function runPriceScraper(): Promise<void> {
                 console.log(`[price-scraper] Processed ${vtexProduct.promotions.length} promotions for product ${product.ean} at ${supermarket.name}`);
               }
               
-              // Update product metadata if empty
-              if (!product.name || !product.brand || !product.category) {
-                await prisma.product.update({
-                  where: { id: product.id },
-                  data: {
-                    name: vtexProduct.name || product.name,
-                    brand: vtexProduct.brand || product.brand,
-                    category: vtexProduct.category || product.category,
-                    imageUrl: vtexProduct.imageUrl || product.imageUrl,
-                    measurementUnit: vtexProduct.measurementUnit || product.measurementUnit,
-                    unitMultiplier: vtexProduct.unitMultiplier || product.unitMultiplier
-                  }
-                });
-              }
+              // Update product metadata
+              await prisma.product.update({
+                where: { id: product.id },
+                data: {
+                  name: vtexProduct.name,
+                  brand: vtexProduct.brand,
+                  category: vtexProduct.categories?.[0],
+                  imageUrl: vtexProduct.image,
+                  measurementUnit: vtexProduct.measurementUnit,
+                  unitMultiplier: vtexProduct.unitMultiplier
+                }
+              });
             }
           } catch (error) {
             console.error(`[price-scraper] Error processing product ${product.ean} for store ${supermarket.name}:`, error);
