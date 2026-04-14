@@ -2,13 +2,35 @@ import { Suspense } from "react";
 import { apiGet } from "@/lib/api";
 import { notFound } from "next/navigation";
 import type { Product } from "@/types/api";
+import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCartStore } from "@/stores/cart";
+import { PriceHistoryChart } from "@/components/products/price-history-chart";
 
 interface ProductPageProps {
   params: Promise<{ ean: string }>;
+}
+
+export const revalidate = 21600; // 6 hours
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { ean } = await params;
+  try {
+    const product = await apiGet<Product>(`/api/products/${ean}`);
+    return {
+      title: `${product.name} | oferTASAS`,
+      description: `Compará precios de ${product.name} en Carrefour, Jumbo y Disco. Encontrá el mejor precio.`,
+      openGraph: {
+        title: `${product.name} | oferTASAS`,
+        description: `Compará precios de ${product.name} en supermercados argentinos`,
+        images: product.imageUrl ? [product.imageUrl] : [],
+      },
+    };
+  } catch {
+    return { title: "Producto no encontrado | oferTASAS" };
+  }
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -20,6 +42,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
     if (!product) {
       notFound();
     }
+
+    // Fetch history data for the chart
+    const historyData = await apiGet<any>(`/api/products/${ean}/history?days=30`);
+    const supermarkets = await apiGet<Array<{ id: number; name: string }>>("/api/supermarkets");
 
     return (
       <div className="container mx-auto py-8">
@@ -117,13 +143,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
 
-          {/* Price History Placeholder */}
+          {/* Price History Chart */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-4">
               Historial de Precios
             </h2>
-            <div className="border rounded-lg p-8 text-center text-gray-500">
-              Gráfico de historial de precios — próximamente con Recharts
+            <div className="border rounded-lg p-4">
+              <PriceHistoryChart data={historyData.prices} supermarkets={supermarkets} />
             </div>
           </div>
 
