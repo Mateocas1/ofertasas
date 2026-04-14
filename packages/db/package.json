@@ -1,12 +1,12 @@
 {
   "name": "@ofertasas/db",
   "version": "0.1.0",
-  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
@@ -16,7 +16,7 @@
     "push": "prisma db push",
     "studio": "prisma studio",
     "seed": "prisma db seed",
-    "build": "prisma generate && tsc"
+    "build": "prisma generate && tsc && node -e \"require('fs').cpSync('src/generated','dist/generated',{recursive:true})\""
   },
   "prisma": {
     "seed": "node --loader ts-node/esm prisma/seed.ts"

@@ -5,6 +5,7 @@ export interface Product {
   brand: string;
   category: string;
   imageUrl: string;
+  image?: string;
   measurementUnit: string;
   unitMultiplier: number;
   prices: Price[];
@@ -17,6 +18,7 @@ export interface Price {
   id: string;
   productId: string;
   supermarketId: string;
+  supermarket?: { id: string; name: string };
   sellingPrice: number;
   listPrice: number;
   referencePrice: number;

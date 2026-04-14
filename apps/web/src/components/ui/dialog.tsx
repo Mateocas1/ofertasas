@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 interface DialogProps {
   open?: boolean
@@ -10,12 +9,17 @@ interface DialogProps {
   children: React.ReactNode
 }
 
-const Dialog = ({ children, open, onOpenChange }: DialogProps) => {
+function Dialog({ open, onOpenChange, children }: DialogProps) {
+  if (!open) return null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/50" />
+    <div className="fixed inset-0 z-50">
+      <div
+        className="fixed inset-0 bg-black/50"
+        onClick={() => onOpenChange?.(false)}
+      />
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md">
+        <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
           {children}
         </div>
       </div>
@@ -23,4 +27,40 @@ const Dialog = ({ children, open, onOpenChange }: DialogProps) => {
   )
 }
 
-export { Dialog }
+function DialogTrigger({ children, asChild, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { asChild?: boolean; children: React.ReactNode }) {
+  return <>{children}</>
+}
+
+function DialogContent({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("p-6", className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function DialogHeader({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left mb-4", className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function DialogTitle({ children, className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h2 className={cn("text-lg font-semibold leading-none tracking-tight", className)} {...props}>
+      {children}
+    </h2>
+  )
+}
+
+function DialogDescription({ children, className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p className={cn("text-sm text-muted-foreground", className)} {...props}>
+      {children}
+    </p>
+  )
+}
+
+export { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription }

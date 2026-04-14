@@ -1,5 +1,6 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 
 export default function NotFound() {
   return (
@@ -9,8 +10,8 @@ export default function NotFound() {
         <p className="text-gray-600 mb-6">
           La página que buscas no existe o fue movida.
         </p>
-        <Button asChild>
-          <Link href="/">Volver al inicio</Link>
+        <Button onClick={() => window.location.href = '/'}>
+          Volver al inicio
         </Button>
       </div>
     </div>

@@ -108,8 +108,8 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-function toast({ ...toast }: Toast) {
-  const id = toast.id || genId()
+function toast({ ...toast }: Toast & { id?: string }) {
+  const id = (toast as any).id || genId()
 
   const update = (toast: Partial<ToasterToast> & { id: string }) =>
     dispatch({
@@ -155,7 +155,7 @@ function useToast() {
   return {
     ...state,
     toast,
-    dismiss: (toastId?: string) => dispatch({ type: "REMOVE_TOAST", toastId }),
+    dismiss: (toastId?: string) => dispatch({ type: "REMOVE_TOAST", toastId: toastId! }),
   }
 }
 

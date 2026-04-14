@@ -7,7 +7,7 @@ export function Toaster() {
 
   return (
     <div className="fixed top-0 right-0 z-[100] p-4 space-y-2">
-      {toasts.map(function ({ id, title, description, action, ...props }) {
+      {toasts.map(function ({ id, title, description, action, ...props }: any) {
         return (
           <div
             key={id}

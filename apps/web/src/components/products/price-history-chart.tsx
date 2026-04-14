@@ -10,12 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  TooltipProps,
 } from "recharts";
-import {
-  ValueType,
-  NameType,
-} from "recharts/types/component/DefaultTooltipContent";
 
 interface HistoryDataPoint {
   recordedAt: Date;
@@ -41,7 +36,7 @@ const supermarketColors: Record<string, string> = {
   "Disco": "#DC2626",      // red-600
 };
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<ValueType, NameType>) => {
+const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-4 border border-gray-200 rounded shadow-lg">

@@ -107,7 +107,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   >
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold">
-                        {price.supermarket.name}
+                        {price.supermarket?.name ?? 'Supermercado'}
                       </h3>
                       {isCheapest && (
                         <Badge variant="default" className="bg-green-600">

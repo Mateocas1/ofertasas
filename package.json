@@ -9,14 +9,12 @@
     "db:generate": "pnpm --filter @ofertasas/db run generate",
     "db:migrate": "pnpm --filter @ofertasas/db run migrate",
     "db:push": "pnpm --filter @ofertasas/db run push",
-    "db:studio": "pnpm --filter @ofertasas/db run studio"
+    "db:studio": "pnpm --filter @ofertasas/db run studio",
+    "postinstall": "pnpm --filter @ofertasas/db run generate"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
     "typescript": "^5.8.0"
   },
-  "packageManager": "pnpm@10.8.0",
-  "dependencies": {
-    "@prisma/client": "^7.7.0"
-  }
+  "packageManager": "pnpm@10.8.0"
 }

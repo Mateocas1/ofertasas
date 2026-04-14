@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
@@ -36,8 +38,8 @@ export function Header() {
         </form>
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" asChild className="hidden md:inline-flex">
-            <Link href="/promociones">Promociones</Link>
+          <Button variant="ghost" className="hidden md:inline-flex" onClick={() => window.location.href = '/promociones'}>
+            Promociones
           </Button>
           <CartIcon />
           <MobileMenu />

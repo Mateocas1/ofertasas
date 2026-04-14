@@ -1,7 +1,6 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 
 export default function Error({
   error,
@@ -19,8 +18,8 @@ export default function Error({
         </p>
         <div className="flex gap-4">
           <Button onClick={() => reset()}>Reintentar</Button>
-          <Button variant="outline" asChild>
-            <Link href="/">Volver al inicio</Link>
+          <Button variant="outline" onClick={() => window.location.href = '/'}>
+            Volver al inicio
           </Button>
         </div>
       </div>

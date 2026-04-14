@@ -17,15 +17,16 @@ export function ProductCard({ product }: ProductCardProps) {
   const convertProductStructure = () => {
     // The API returns prices as an object with store names as keys
     // Convert to array format expected by the component
-    const priceArray = [];
+    const priceArray: any[] = [];
     if (product.prices) {
       for (const [storeName, priceInfo] of Object.entries(product.prices)) {
+        const p = priceInfo as any;
         priceArray.push({
           supermarket: { name: storeName },
-          sellingPrice: priceInfo.price,
-          listPrice: priceInfo.listPrice,
-          referencePrice: priceInfo.referencePrice,
-          isAvailable: priceInfo.isAvailable,
+          sellingPrice: p.sellingPrice ?? p.price,
+          listPrice: p.listPrice,
+          referencePrice: p.referencePrice,
+          isAvailable: p.isAvailable,
           supermarketId: storeName
         });
       }
@@ -35,8 +36,10 @@ export function ProductCard({ product }: ProductCardProps) {
     let cheapestStore = "";
     let cheapestPrice = Infinity;
     for (const [storeName, priceInfo] of Object.entries(product.prices || {})) {
-      if (priceInfo.price && priceInfo.price < cheapestPrice) {
-        cheapestPrice = priceInfo.price;
+      const p = priceInfo as any;
+      const price = p.sellingPrice ?? p.price;
+      if (price && price < cheapestPrice) {
+        cheapestPrice = price;
         cheapestStore = storeName;
       }
     }
@@ -121,14 +124,14 @@ export function ProductCard({ product }: ProductCardProps) {
           size="sm"
           onClick={() => {
             // Add to cart from the cheapest available store by default
-            if (cheapestStore && product.prices?.[cheapestStore]) {
+            if (cheapestStore && (product.prices as any)?.[cheapestStore]) {
               addItem({
                 productId: product.ean,
                 productName: product.name,
-                productImage: product.image,
+                productImage: product.image ?? product.imageUrl ?? '',
                 supermarketId: cheapestStore,
                 supermarketName: cheapestStore,
-                price: product.prices[cheapestStore].price || 0,
+                price: (product.prices as any)[cheapestStore]?.sellingPrice ?? (product.prices as any)[cheapestStore]?.price ?? 0,
                 quantity: 1
               })
             }
