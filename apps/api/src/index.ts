@@ -13,6 +13,7 @@ import redis from './lib/redis.js';
 // Import route handlers
 import { searchRoutes } from './routes/search.js';
 import { promotionsRoutes } from './routes/promotions.js';
+import { productDetailRoutes } from './routes/product-detail.js';
 import { productRoutes } from './routes/products.js';
 import { cartRoutes } from './routes/cart.js';
 import { adminRoutes } from './routes/admin.js';
@@ -55,6 +56,7 @@ await app.register(sessionPlugin);
 await app.register(hashRoutes);
 await app.register(searchRoutes);
 await app.register(promotionsRoutes);
+await app.register(productDetailRoutes);
 await app.register(productRoutes);
 await app.register(cartRoutes);
 await app.register(adminRoutes);

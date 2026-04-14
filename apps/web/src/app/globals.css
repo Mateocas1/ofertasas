@@ -1,6 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
 @import "tailwindcss";
 
-/* Custom theme overrides */
+/* ==========================================
+   oferTASAS Design System v1.0
+   "Patagonia Tech" - Premium Argentine SaaS
+   ========================================== */
+
 @theme {
-  --font-sans: system-ui, -apple-system, sans-serif;
+  /* ========== COLORS: Patagonia Tech Palette ========== */
+  --color-brand-primary: #0f172a;        /* Midnight Blue */
+  --color-brand-accent: #2563eb;         /* Argentine Cobalt */
+  --color-brand-success: #059669;        /* Emerald - Savings/Lowest Price */
+  --color-brand-warning: #d97706;        /* Amber - Alert */
+  --color-brand-error: #dc2626;          /* Red - Error */
+  
+  --color-surface: #ffffff;              /* Card surfaces */
+  --color-background: #f8fafc;           /* App canvas */
+  --color-border: #e2e8f0;               /* Subtle dividers */
+  --color-border-dark: #cbd5e1;          /* Stronger dividers */
+  --color-text-primary: #0f172a;         /* Main text */
+  --color-text-secondary: #475569;       /* Secondary text */
+  --color-text-tertiary: #94a3b8;        /* Tertiary text */
+  
+  /* Store-specific colors (grayscale by default, color when winner) */
+  --color-store-carrefour: #6b7280;
+  --color-store-disco: #6b7280;
+  --color-store-jumbo: #6b7280;
+  
+  /* ========== TYPOGRAPHY ========== */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  /* Font sizes (in px) */
+  --size-xs: 12px;
+  --size-sm: 14px;
+  --size-base: 16px;
+  --size-lg: 18px;
+  --size-xl: 20px;
+  --size-2xl: 24px;
+  --size-3xl: 32px;
+  --size-4xl: 40px;
+  
+  /* ========== SPACING: 4px Grid System ========== */
+  --space-0: 0px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 28px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  
+  /* ========== SHADOWS: Restrained & Premium ========== */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.1), 0 1px 2px -1px rgba(15, 23, 42, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.1), 0 2px 4px -2px rgba(15, 23, 42, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.1);
+  
+  /* ========== BORDER RADIUS ========== */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+/* ========== BASE LAYER: Global Styles ========== */
+@layer base {
+  /* Smooth transitions */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-text-primary antialiased;
+    font-family: var(--font-sans);
+  }
+
+  /* Typography hierarchy */
+  h1 {
+    @apply text-4xl font-bold tracking-tighter leading-tight;
+  }
+
+  h2 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-lg font-semibold;
+  }
+
+  h4 {
+    @apply text-base font-semibold;
+  }
+
+  p {
+    @apply text-base leading-relaxed;
+  }
+
+  small {
+    @apply text-xs font-medium uppercase tracking-wider text-text-secondary;
+  }
+
+  /* Link styling */
+  a {
+    @apply text-brand-accent underline-offset-4 transition-colors hover:text-brand-primary;
+  }
+
+  /* Input styling */
+  input,
+  textarea,
+  select {
+    @apply rounded-lg border border-border bg-surface px-3 py-2 text-text-primary placeholder:text-text-tertiary focus:border-brand-accent focus:ring-1 focus:ring-brand-accent transition-all outline-none;
+  }
+
+  input::placeholder {
+    @apply text-text-tertiary;
+  }
+}
+
+/* ========== COMPONENT LAYER: Reusable Patterns ========== */
+@layer components {
+  /* Premium buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 bg-brand-accent text-white font-medium rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-lg hover:bg-background transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Premium cards (flat, subtle borders) */
+  .card {
+    @apply bg-surface border border-border rounded-lg p-6 transition-all hover:shadow-sm;
+  }
+
+  .card-compact {
+    @apply bg-surface border border-border rounded-lg p-4;
+  }
+
+  /* Price display in monospace (alignment matters) */
+  .price-mono {
+    @apply font-mono font-semibold text-text-primary;
+  }
+
+  /* Badge for savings/promotions */
+  .badge-success {
+    @apply inline-flex items-center px-2 py-1 bg-green-50 border border-green-200 rounded-md text-brand-success font-medium text-xs;
+  }
+
+  .badge-accent {
+    @apply inline-flex items-center px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-brand-accent font-medium text-xs;
+  }
+
+  /* Store logo placeholder (grayscale) */
+  .store-badge {
+    @apply inline-flex items-center justify-center w-10 h-10 rounded-lg bg-background border border-border text-text-secondary font-semibold text-sm grayscale;
+  }
+
+  .store-badge.winner {
+    @apply bg-green-50 border-brand-success text-brand-success grayscale-0;
+  }
+
+  /* Divider line */
+  .divider {
+    @apply border-t border-border;
+  }
 }
