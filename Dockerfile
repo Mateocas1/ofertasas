@@ -19,6 +19,11 @@ RUN pnpm install --no-frozen-lockfile
 
 # ---- Stage 2: Build ----
 FROM base AS builder
+
+# Accept DATABASE_URL at build time for prisma generate
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps /app/packages/vtex-client/node_modules ./packages/vtex-client/node_modules
