@@ -20,8 +20,8 @@ RUN pnpm install --no-frozen-lockfile
 # ---- Stage 2: Build ----
 FROM base AS builder
 
-# Accept DATABASE_URL at build time for prisma generate
-ARG DATABASE_URL
+# Accept DATABASE_URL at build time for prisma generate (placeholder OK)
+ARG DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
 ENV DATABASE_URL=${DATABASE_URL}
 
 COPY --from=deps /app/node_modules ./node_modules
