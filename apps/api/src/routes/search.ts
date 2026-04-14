@@ -15,6 +15,30 @@ interface GroupedProduct {
 }
 
 /**
+ * Converts the grouped product format (prices as object) to the frontend format (prices as array)
+ */
+function convertToFrontendFormat(groupedProduct: GroupedProduct) {
+  const pricesArray = Object.entries(groupedProduct.prices).map(([storeName, priceInfo]) => ({
+    supermarketId: storeName,
+    sellingPrice: priceInfo.price,
+    listPrice: priceInfo.listPrice,
+    referencePrice: priceInfo.referencePrice,
+    isAvailable: priceInfo.isAvailable,
+  }));
+
+  return {
+    ean: groupedProduct.ean,
+    name: groupedProduct.name,
+    brand: groupedProduct.brand,
+    image: groupedProduct.image,
+    imageUrl: groupedProduct.image,
+    prices: pricesArray,
+    promotions: groupedProduct.promotions,
+    cheapestStore: groupedProduct.cheapest,
+  };
+}
+
+/**
  * Groups products by EAN across stores
  */
 function groupProductsByEan(storeResults: StoreResult[]): { groupedProducts: GroupedProduct[], failures: Array<{ store: string, error: string }> } {
@@ -141,17 +165,20 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
       const storeResults = await searchAcrossStores(query, stores);
       const responseTime = Date.now() - start;
       
-      // Group results by EAN and get failures
-      const { groupedProducts, failures } = groupProductsByEan(storeResults);
-      
-      // Cache the result for 1 hour
-      const result = {
-        query,
-        products: groupedProducts,
-        failures, // Include failures in response
-        cached: false,
-        responseTime
-      };
+       // Group results by EAN and get failures
+       const { groupedProducts, failures } = groupProductsByEan(storeResults);
+       
+       // Convert to frontend format
+       const convertedProducts = groupedProducts.map(convertToFrontendFormat);
+       
+       // Cache the result for 1 hour
+       const result = {
+         query,
+         products: convertedProducts,
+         failures, // Include failures in response
+         cached: false,
+         responseTime
+       };
       
       await redis.setex(cacheKey, 3600, JSON.stringify(result));
       
