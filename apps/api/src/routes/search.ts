@@ -69,7 +69,7 @@ function groupProductsByEan(storeResults: StoreResult[]): { groupedProducts: Gro
           image: product.image,
           prices: {},
           cheapest: "",
-          promotions: product.promotions
+          promotions: []
         };
         productMap.set(product.ean, groupedProduct);
       }
@@ -82,6 +82,22 @@ function groupProductsByEan(storeResults: StoreResult[]): { groupedProducts: Gro
         isAvailable: product.isAvailable,
         referencePrice: product.referencePrice
       };
+      
+      // Accumulate promotions from all stores (avoid duplicates)
+      if (product.promotions && Array.isArray(product.promotions)) {
+        for (const promo of product.promotions) {
+          // Check if this promo already exists (by description and store)
+          const promoExists = groupedProduct.promotions.some(
+            p => p.description === promo.description && p.supermarketId === storeName
+          );
+          if (!promoExists) {
+            groupedProduct.promotions.push({
+              ...promo,
+              supermarketId: storeName
+            });
+          }
+        }
+      }
     }
   }
   
