@@ -1,7 +1,0 @@
-[build]
-builder = "Dockerfile"
-
-[deploy]
-startCommand = "node apps/api/dist/index.js"
-healthCheckPath = "/health"
-restartPolicy = "on-failure"
