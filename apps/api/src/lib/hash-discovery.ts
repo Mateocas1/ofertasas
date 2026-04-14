@@ -16,8 +16,8 @@ import redis from "../lib/redis.js";
 // These are fallbacks when automatic discovery fails
 const HARDCODED_HASHES: Record<string, string> = {
   disco: "3eca26a431d4646a8bbce2644b78d3ca734bf8b4ba46afe4269621b64b0fb67d",
-  carrefour: "91d813b9df68a333d22ccc371643b23d4a34791eab9985f32a7341ef47db4e2b",
-  jumbo: "b26a4ba7d40b4a97e09a9c3c3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e3e", // Placeholder - needs verification
+  carrefour: "3eca26a431d4646a8bbce2644b78d3ca734bf8b4ba46afe4269621b64b0fb67d",
+  jumbo: "3eca26a431d4646a8bbce2644b78d3ca734bf8b4ba46afe4269621b64b0fb67d",
 };
 
 const HASH_CACHE_KEY = (store: string) => `vtex:hash:discovery:${store}`;
