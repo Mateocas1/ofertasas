@@ -9,13 +9,13 @@ WORKDIR /app
 
 # ---- Stage 1: Install dependencies ----
 FROM base AS deps
-COPY package.json pnpm-workspace.yaml turbo.json tsconfig.base.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/vtex-client/package.json ./packages/vtex-client/
 COPY packages/db/package.json ./packages/db/
 COPY packages/ui/package.json ./packages/ui/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # ---- Stage 2: Build ----
 FROM base AS builder
