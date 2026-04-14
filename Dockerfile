@@ -30,6 +30,8 @@ COPY --from=deps /app/packages/vtex-client/node_modules ./packages/vtex-client/n
 COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 COPY . .
 RUN pnpm --filter @ofertasas/db run generate
+RUN pnpm --filter @ofertasas/db run build
+RUN pnpm --filter @ofertasas/vtex-client run build
 RUN pnpm --filter @ofertasas/api run build
 
 # ---- Stage 3: Production ----
@@ -48,8 +50,8 @@ COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
 
 # Copy built output
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/packages/vtex-client/src ./packages/vtex-client/src
-COPY --from=builder /app/packages/db/src ./packages/db/src
+COPY --from=builder /app/packages/vtex-client/dist ./packages/vtex-client/dist
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/packages/vtex-client/package.json ./packages/vtex-client/
