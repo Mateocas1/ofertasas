@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Supermarket {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  baseUrl     String
+  vtexHash    String?
+  hashExpires DateTime?
+  products    Product[]
+  prices      Price[]
+  promotions  Promotion[]
+
+  @@map("supermarkets")
+}
+
+model Product {
+  id              Int       @id @default(autoincrement())
+  ean             String    @unique
+  name            String
+  brand           String?
+  category        String?
+  imageUrl        String?
+  measurementUnit String?   // "un", "kg", "lt"
+  unitMultiplier  Float?    // 1.0, 0.5, 1.5
+
+  prices      Price[]
+  promotions  Promotion[]
+  cartItems   CartItem[]
+
+  supermarketId Int?
+  supermarket   Supermarket? @relation(fields: [supermarketId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
+
+model Price {
+  id             Int       @id @default(autoincrement())
+  productId      Int
+  supermarketId  Int
+  sellingPrice   Float?
+  listPrice      Float?
+  referencePrice Float?    // sellingPrice / unitMultiplier
+  isAvailable    Boolean   @default(true)
+  externalId     String?   // VTEX productId
+  skuId          String?   // VTEX SKU
+  recordedAt     DateTime  @default(now())
+
+  product     Product     @relation(fields: [productId], references: [id])
+  supermarket Supermarket @relation(fields: [supermarketId], references: [id])
+
+  @@index([productId, supermarketId, recordedAt])
+  @@index([recordedAt])
+  @@map("prices")
+}
+
+model Promotion {
+  id             Int       @id @default(autoincrement())
+  productId      Int
+  supermarketId  Int
+  type           String    // "percentage", "2x1", "2do_al_50", "wallet", "fixed"
+  description    String
+  conditions     Json?
+  discountValue  Float?
+  walletProvider String?   // "Mercado Pago", "Ualá", etc.
+  isActive       Boolean   @default(true)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  recordedAt     DateTime  @default(now())
+
+  product     Product     @relation(fields: [productId], references: [id])
+  supermarket Supermarket @relation(fields: [supermarketId], references: [id])
+
+  @@index([productId, supermarketId])
+  @@index([isActive])
+  @@map("promotions")
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  sessionId String     @unique
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id            Int      @id @default(autoincrement())
+  cartId        Int
+  productId     Int
+  supermarketId Int
+  quantity      Int      @default(1)
+  addedAt       DateTime @default(now())
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId, supermarketId])
+  @@map("cart_items")
+}
+
+model HashDiscovery {
+  id            Int      @id @default(autoincrement())
+  supermarketId Int
+  hash          String
+  discoveredAt  DateTime @default(now())
+  source        String   // "auto-worker", "manual"
+  isActive      Boolean  @default(true)
+
+  @@index([supermarketId, isActive])
+  @@map("hash_discoveries")
+}

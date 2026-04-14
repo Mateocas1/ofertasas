@@ -1,0 +1,262 @@
+import { FastifyInstance } from "fastify";
+import { PrismaClient } from "@prisma/client";
+import type { AddToCart, CartItemUpdate, CartItemDelete } from "../schemas/cart.js";
+
+const prisma = new PrismaClient();
+
+export async function cartRoutes(app: FastifyInstance): Promise<void> {
+  // GET /api/cart - Get cart items for sessionId
+  app.get("/api/cart", {
+    schema: {
+      querystring: {
+        type: "object",
+        properties: {
+          sessionId: { type: "string" }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { sessionId } = request.query as { sessionId?: string };
+    
+    if (!sessionId) {
+      return reply.status(400).send({ error: "Session ID is required" });
+    }
+    
+    try {
+      // Find or create cart
+      let cart = await prisma.cart.findUnique({
+        where: { sessionId },
+        include: {
+          items: {
+            include: {
+              product: true
+            }
+          }
+        }
+      });
+      
+      if (!cart) {
+        cart = await prisma.cart.create({
+          data: {
+            sessionId,
+            items: []
+          },
+          include: {
+            items: {
+              include: {
+                product: true
+              }
+            }
+          }
+        });
+      }
+      
+      // Group items by store
+      const itemsByStore: Record<string, any[]> = {};
+      let grandTotal = 0;
+      
+      // TODO: Implement actual grouping logic
+      // This is a simplified version - in reality, we'd need to fetch actual product data
+      
+      return reply.send({
+        sessionId,
+        items: cart.items,
+        itemsByStore,
+        grandTotal,
+        itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0)
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Failed to fetch cart" });
+    }
+  });
+  
+  // POST /api/cart/items - Add item to cart
+  app.post<{
+    Body: AddToCart
+  }>("/api/cart/items", {
+    schema: {
+      body: {
+        type: "object",
+        properties: {
+          productId: { type: "number" },
+          supermarketId: { type: "number" },
+          quantity: { type: "number", minimum: 1, maximum: 99 }
+        },
+        required: ["productId", "supermarketId"]
+      }
+    }
+  }, async (request, reply) => {
+    const { sessionId } = request;
+    const { productId, supermarketId, quantity = 1 } = request.body as AddToCart & { sessionId: string };
+    
+    if (!sessionId) {
+      return reply.status(400).send({ error: "Session ID is required" });
+    }
+    
+    try {
+      // Find or create cart
+      let cart = await prisma.cart.findUnique({
+        where: { sessionId },
+      });
+      
+      if (!cart) {
+        cart = await prisma.cart.create({
+          data: { sessionId }
+        });
+      }
+      
+      // Check if item already exists in cart (same product + same store)
+      const existingItem = await prisma.cartItem.findUnique({
+        where: {
+          cartId_productId_supermarketId: {
+            cartId: cart.id,
+            productId,
+            supermarketId
+          }
+        }
+      });
+      
+      let cartItem;
+      if (existingItem) {
+        // Increment quantity
+        cartItem = await prisma.cartItem.update({
+          where: { id: existingItem.id },
+          data: {
+            quantity: existingItem.quantity + quantity
+          }
+        });
+      } else {
+        // Create new item
+        cartItem = await prisma.cartItem.create({
+          data: {
+            cartId: cart.id,
+            productId,
+            supermarketId,
+            quantity
+          }
+        });
+      }
+      
+      // Return updated cart
+      const updatedCart = await prisma.cart.findUnique({
+        where: { sessionId },
+        include: {
+          items: {
+            include: {
+              product: true
+            }
+          }
+        }
+      });
+      
+      return reply.send({
+        success: true,
+        cart: updatedCart,
+        item: cartItem
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Failed to add item to cart" });
+    }
+  });
+  
+  // PATCH /api/cart/items/:id - Update item quantity
+  app.patch<{
+    Params: { id: string },
+    Body: CartItemUpdate
+  }>("/api/cart/items/:id", {
+    schema: {
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string" }
+        },
+        required: ["id"]
+      },
+      body: {
+        type: "object",
+        properties: {
+          quantity: { type: "number", minimum: 1, maximum: 99 }
+        },
+        required: ["quantity"]
+      }
+    }
+  }, async (request, reply) => {
+    const itemId = parseInt(request.params.id);
+    const { quantity } = request.body;
+    
+    try {
+      const updatedItem = await prisma.cartItem.update({
+        where: { id: itemId },
+        data: { quantity }
+      });
+      
+      return reply.send({
+        success: true,
+        item: updatedItem
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Failed to update cart item" });
+    }
+  });
+  
+  // DELETE /api/cart/items/:id - Remove item from cart
+  app.delete<{
+    Params: { id: string }
+  }>("/api/cart/items/:id", {
+    schema: {
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string" }
+        },
+        required: ["id"]
+      }
+    }
+  }, async (request, reply) => {
+    const itemId = parseInt(request.params.id);
+    
+    try {
+      await prisma.cartItem.delete({
+        where: { id: itemId }
+      });
+      
+      return reply.send({ success: true });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Failed to remove cart item" });
+    }
+  });
+  
+  // DELETE /api/cart - Clear entire cart
+  app.delete("/api/cart", async (request, reply) => {
+    const { sessionId } = request.query as { sessionId?: string };
+    
+    if (!sessionId) {
+      return reply.status(400).send({ error: "Session ID is required" });
+    }
+    
+    try {
+      // Find cart
+      const cart = await prisma.cart.findUnique({
+        where: { sessionId }
+      });
+      
+      if (!cart) {
+        return reply.status(404).send({ error: "Cart not found" });
+      }
+      
+      // Delete all items in cart
+      await prisma.cartItem.deleteMany({
+        where: { cartId: cart.id }
+      });
+      
+      return reply.send({ success: true });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Failed to clear cart" });
+    }
+  });
+}

@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Custom theme overrides */
+@theme {
+  --font-sans: system-ui, -apple-system, sans-serif;
+}
