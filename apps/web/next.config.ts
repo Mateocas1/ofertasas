@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.carrefour.com.ar" },
       { protocol: "https", hostname: "**.jumbo.com.ar" },
       { protocol: "https", hostname: "**.disco.com.ar" },
+      { protocol: "https", hostname: "**.vtexassets.com" },
     ],
   },
 };
