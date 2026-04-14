@@ -62,13 +62,18 @@ export async function discoverHashForStore(storeKey: string): Promise<string | n
     console.log(`[hash-discovery] Discovering hash for ${storeKey}...`);
 
     // Fetch the store's search page to extract the hash
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    
     const response = await fetch(`${store.baseUrl}/?q=test`, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
-      signal: AbortSignal.timeout(10000),
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeout);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch ${store.baseUrl}: ${response.status}`);
