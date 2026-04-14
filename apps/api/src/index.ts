@@ -83,7 +83,7 @@ app.get('/', async () => {
 
 // Start server
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-app.listen({ port: PORT }, (err) => {
+app.listen({ host: '0.0.0.0', port: PORT }, (err) => {
   if (err) {
     app.log.error(err);
     process.exit(1);
