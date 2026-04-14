@@ -9,8 +9,7 @@
     "db:generate": "pnpm --filter @ofertasas/db run generate",
     "db:migrate": "pnpm --filter @ofertasas/db run migrate",
     "db:push": "pnpm --filter @ofertasas/db run push",
-    "db:studio": "pnpm --filter @ofertasas/db run studio",
-    "postinstall": "pnpm --filter @ofertasas/db run generate"
+    "db:studio": "pnpm --filter @ofertasas/db run studio"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
