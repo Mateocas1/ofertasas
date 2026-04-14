@@ -94,8 +94,8 @@ function buildUrl(
     domain: "store",
     locale: "es-AR",
     operationName: "productSuggestions",
-    variables: encodeUrl("{}"),
-    extensions: encodeUrl(extensions),
+    variables: "{}",
+    extensions: extensions,
   });
   return `${baseUrl}/_v/segment/graphql/v1/?${params.toString()}`;
 }
