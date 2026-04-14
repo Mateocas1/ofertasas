@@ -34,6 +34,7 @@ export {
   isHashExpired,
   getAllHashes,
   removeHash,
+  initHashManager,
 } from "./hash-manager.js";
 
 // Unit Calculator

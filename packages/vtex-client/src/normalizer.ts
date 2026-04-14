@@ -6,6 +6,7 @@ import type {
   NormalizedProduct,
   NormalizedPromotion,
 } from "./types.js";
+import { extractUnitFromName } from "./unit-calculator.js";
 
 /**
  * Extracts the EAN from a VTEX item.
@@ -137,10 +138,17 @@ export function normalizeProduct(
 
   // Reference price (price per unit)
   let referencePrice: number | null = null;
-  const referenceUnit = item.measurementUnit || null;
+  let referenceUnit = item.measurementUnit || null;
 
   if (item.unitMultiplier && item.unitMultiplier > 0 && sellingPrice > 0) {
     referencePrice = sellingPrice / item.unitMultiplier;
+  } else if ((!item.unitMultiplier || item.unitMultiplier === 0) && sellingPrice > 0) {
+    // Fallback: try to extract unit from product name
+    const unitInfo = extractUnitFromName(rawProduct.productName);
+    if (unitInfo) {
+      referencePrice = sellingPrice / unitInfo.value;
+      referenceUnit = unitInfo.unit;
+    }
   }
 
   // Availability

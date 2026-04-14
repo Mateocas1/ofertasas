@@ -4,6 +4,7 @@ import type {
   StoreResult,
 } from "./types.js";
 import { normalizeProduct } from "./normalizer.js";
+import { getManagedHash } from "./hash-manager.js";
 
 // ============================================
 // VTEX Store Configurations
@@ -178,7 +179,7 @@ export async function fetchVtexProducts(
   source: string,
   count: number = 50
 ): Promise<NormalizedProduct[]> {
-  const hash = getHash(source);
+  const hash = await getManagedHash(source);
   if (!hash) {
     console.warn(
       `[vtex-client] No hash found for ${source}. Skipping.`

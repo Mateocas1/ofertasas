@@ -4,6 +4,44 @@ import type { AddToCart, CartItemUpdate, CartItemDelete } from "../schemas/cart.
 
 const prisma = new PrismaClient();
 
+/**
+ * Calculate price change information for an item
+ */
+async function calculatePriceChange(productId: number, supermarketId: number, storedPrice: number) {
+  try {
+    // Get the latest price for this product from the database
+    const latestPrice = await prisma.price.findFirst({
+      where: {
+        productId: productId,
+        supermarketId: supermarketId
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      select: {
+        price: true
+      }
+    });
+    
+    if (!latestPrice) return null;
+    
+    // Compare prices and return change info if different
+    if (latestPrice.price !== storedPrice) {
+      const priceDifference = latestPrice.price - storedPrice;
+      return {
+        direction: priceDifference > 0 ? 'up' : 'down',
+        oldPrice: storedPrice,
+        newPrice: latestPrice.price,
+        difference: Math.abs(priceDifference)
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
 export async function cartRoutes(app: FastifyInstance): Promise<void> {
   // GET /api/cart - Get cart items for sessionId
   app.get("/api/cart", {
@@ -51,16 +89,32 @@ export async function cartRoutes(app: FastifyInstance): Promise<void> {
         });
       }
       
-      // Group items by store
-      const itemsByStore: Record<string, any[]> = {};
+      // Add price change detection to cart items
+      const itemsWithPriceChanges = [];
       let grandTotal = 0;
       
+      for (const item of cart.items) {
+        // Calculate item total
+        const itemTotal = item.price * item.quantity;
+        grandTotal += itemTotal;
+        
+        // Check for price changes
+        const priceChange = await calculatePriceChange(item.productId, item.supermarketId, item.price);
+        
+        itemsWithPriceChanges.push({
+          ...item,
+          priceChange // Will be null if no change, or contain change details if there is one
+        });
+      }
+      
+      // Group items by store
+      const itemsByStore: Record<string, any[]> = {};
       // TODO: Implement actual grouping logic
       // This is a simplified version - in reality, we'd need to fetch actual product data
       
       return reply.send({
         sessionId,
-        items: cart.items,
+        items: itemsWithPriceChanges,
         itemsByStore,
         grandTotal,
         itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0)

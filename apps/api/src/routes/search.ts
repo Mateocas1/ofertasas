@@ -17,12 +17,20 @@ interface GroupedProduct {
 /**
  * Groups products by EAN across stores
  */
-function groupProductsByEan(storeResults: StoreResult[]): GroupedProduct[] {
+function groupProductsByEan(storeResults: StoreResult[]): { groupedProducts: GroupedProduct[], failures: Array<{ store: string, error: string }> } {
   const productMap: Map<string, GroupedProduct> = new Map();
   
   // Process each store's results
+  const failures: Array<{ store: string, error: string }> = [];
   for (const storeResult of storeResults) {
-    if (!storeResult.success) continue;
+    if (!storeResult.success) {
+      // Record the failure
+      failures.push({ 
+        store: storeResult.store, 
+        error: storeResult.error || "Store request failed" 
+      });
+      continue;
+    }
     
     for (const product of storeResult.products) {
       if (!product.ean) continue;
@@ -52,6 +60,27 @@ function groupProductsByEan(storeResults: StoreResult[]): GroupedProduct[] {
       };
     }
   }
+  
+  // Convert map to array and find cheapest store for each product
+  const result: GroupedProduct[] = [];
+  for (const groupedProduct of productMap.values()) {
+    // Find cheapest store
+    let cheapestStore = "";
+    let cheapestPrice = Infinity;
+    
+    for (const [store, priceInfo] of Object.entries(groupedProduct.prices)) {
+      if (priceInfo.price && priceInfo.price < cheapestPrice) {
+        cheapestPrice = priceInfo.price;
+        cheapestStore = store;
+      }
+    }
+    
+    groupedProduct.cheapest = cheapestStore;
+    result.push(groupedProduct);
+  }
+  
+  return { groupedProducts: result, failures };
+}
   
   // Convert map to array and find cheapest store for each product
   const result: GroupedProduct[] = [];
@@ -115,13 +144,14 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
       const storeResults = await searchAcrossStores(query, stores);
       const responseTime = Date.now() - start;
       
-      // Group results by EAN
-      const groupedProducts = groupProductsByEan(storeResults);
+      // Group results by EAN and get failures
+      const { groupedProducts, failures } = groupProductsByEan(storeResults);
       
       // Cache the result for 1 hour
       const result = {
         query,
         products: groupedProducts,
+        failures, // Include failures in response
         cached: false,
         responseTime
       };

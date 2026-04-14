@@ -9,6 +9,8 @@
  * Hashes expire and need to be refreshed by the hash-discovery worker.
  */
 
+import Redis from "ioredis";
+
 interface HashEntry {
   hash: string;
   storedAt: number; // Date.now()
@@ -17,7 +19,17 @@ interface HashEntry {
 
 const hashStore = new Map<string, HashEntry>();
 
+// Redis client (can be set via initHashManager)
+let redisClient: Redis | null = null;
+
 const DEFAULT_TTL = 4 * 60 * 60 * 1000; // 4 hours
+
+/**
+ * Initialize hash manager with Redis client
+ */
+export function initHashManager(redis: Redis): void {
+  redisClient = redis;
+}
 
 /**
  * Save a hash for a supermarket.
@@ -27,18 +39,51 @@ export function saveHash(
   hash: string,
   ttl: number = DEFAULT_TTL
 ): void {
+  // Save to in-memory store
   hashStore.set(store, {
     hash,
     storedAt: Date.now(),
     ttl,
   });
+  
+  // Save to Redis if available
+  if (redisClient) {
+    const key = `vtex:hash:${store}`;
+    redisClient.setex(key, Math.floor(ttl / 1000), JSON.stringify({
+      hash,
+      storedAt: Date.now(),
+      ttl
+    }));
+  }
 }
 
 /**
  * Get the current hash for a supermarket.
  * Returns undefined if not found or expired.
  */
-export function getHash(store: string): string | undefined {
+export async function getHash(store: string): Promise<string | undefined> {
+  const key = `vtex:hash:${store}`;
+  
+  // Try to get from Redis first if available
+  if (redisClient) {
+    try {
+      const redisValue = await redisClient.get(key);
+      if (redisValue) {
+        const entry: HashEntry = JSON.parse(redisValue);
+        if (!isExpired(entry)) {
+          return entry.hash;
+        } else {
+          // Remove expired entry
+          await redisClient.del(key);
+        }
+      }
+    } catch (error) {
+      // Fall back to in-memory store if Redis fails
+      console.warn("Redis error, falling back to in-memory store:", error);
+    }
+  }
+  
+  // Try in-memory store
   const entry = hashStore.get(store);
   if (!entry) return undefined;
 
@@ -53,7 +98,24 @@ export function getHash(store: string): string | undefined {
 /**
  * Check if a hash has expired.
  */
-export function isHashExpired(store: string): boolean {
+export async function isHashExpired(store: string): Promise<boolean> {
+  const key = `vtex:hash:${store}`;
+  
+  // Try Redis first if available
+  if (redisClient) {
+    try {
+      const redisValue = await redisClient.get(key);
+      if (redisValue) {
+        const entry: HashEntry = JSON.parse(redisValue);
+        return isExpired(entry);
+      }
+    } catch (error) {
+      // Fall back to in-memory store if Redis fails
+      console.warn("Redis error, falling back to in-memory store:", error);
+    }
+  }
+  
+  // Check in-memory store
   const entry = hashStore.get(store);
   if (!entry) return true;
   return isExpired(entry);
@@ -62,21 +124,55 @@ export function isHashExpired(store: string): boolean {
 /**
  * Get all stored hashes.
  */
-export function getAllHashes(): Record<string, string> {
+export async function getAllHashes(): Promise<Record<string, string>> {
   const result: Record<string, string> = {};
+  
+  // Try to get from Redis if available
+  if (redisClient) {
+    try {
+      const keys = await redisClient.keys("vtex:hash:*");
+      for (const key of keys) {
+        const redisValue = await redisClient.get(key);
+        if (redisValue) {
+          try {
+            const entry: HashEntry = JSON.parse(redisValue);
+            if (!isExpired(entry)) {
+              const storeName = key.replace("vtex:hash:", "");
+              result[storeName] = entry.hash;
+            }
+          } catch (error) {
+            // Skip invalid entries
+          }
+        }
+      }
+    } catch (error) {
+      // Fall back to in-memory store if Redis fails
+      console.warn("Redis error, falling back to in-memory store:", error);
+    }
+  }
+  
+  // Add in-memory entries
   for (const [store, entry] of hashStore) {
     if (!isExpired(entry)) {
       result[store] = entry.hash;
     }
   }
+  
   return result;
 }
 
 /**
  * Remove a hash.
  */
-export function removeHash(store: string): void {
+export async function removeHash(store: string): Promise<void> {
+  // Remove from in-memory store
   hashStore.delete(store);
+  
+  // Remove from Redis if available
+  if (redisClient) {
+    const key = `vtex:hash:${store}`;
+    await redisClient.del(key);
+  }
 }
 
 // Internal helpers

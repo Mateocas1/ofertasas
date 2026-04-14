@@ -5,6 +5,7 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { ProductCard, ProductCardSkeleton } from '@/components/search/product-card'
 import { apiGet } from '@/lib/api'
 import { Product } from '@/types/api'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -14,7 +15,7 @@ export default function Home() {
     queryKey: ['search', debouncedQuery],
     queryFn: async () => {
       const response = await apiGet<any>(`/api/search?q=${debouncedQuery}`);
-      return response.products || [];
+      return response;
     },
     enabled: debouncedQuery.length > 0
   })
@@ -36,6 +37,18 @@ export default function Home() {
       </div>
       
       <div className="mb-4">
+        {searchResults?.failures && searchResults.failures.length > 0 && (
+          <div className="mb-4">
+            {searchResults.failures.map((failure: any) => (
+              <Alert key={failure.store} variant="destructive" className="mb-2">
+                <AlertDescription>
+                  No pudimos obtener precios de {failure.store}. Mostrando resultados de otros supermercados.
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+        
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -47,14 +60,14 @@ export default function Home() {
             <h2 className="text-xl mb-2">Bienvenido al buscador de precios</h2>
             <p className="text-gray-600">Buscá productos para comparar precios</p>
           </div>
-        ) : !searchResults || searchResults.length === 0 ? (
+        ) : !searchResults?.products || searchResults.products.length === 0 ? (
           <div className="text-center py-12">
             <h2 className="text-xl mb-2">Sin resultados</h2>
             <p className="text-gray-600">Buscá productos para comparar precios</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {searchResults.map((product: Product) => (
+            {searchResults.products.map((product: Product) => (
               <ProductCard key={product.ean} product={product} />
             ))}
           </div>

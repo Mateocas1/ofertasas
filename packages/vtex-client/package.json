@@ -10,7 +10,9 @@
       "default": "./src/index.ts"
     }
   },
-  "dependencies": {},
+  "dependencies": {
+    "ioredis": "^5.4.0"
+  },
   "devDependencies": {
     "typescript": "^5.8.0"
   }
