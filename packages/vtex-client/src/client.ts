@@ -48,10 +48,17 @@ function buildVariables(
     productOriginVtex: true,
     simulationBehavior: "default",
     hideUnavailableItems: true,
+    advertisementOptions: {
+      showSponsored: true,
+      sponsoredCount: 2,
+      repeatSponsoredProducts: false,
+      advertisementPlacement: "autocomplete",
+    },
     fullText: query,
     count,
     shippingOptions: [],
     variant: null,
+    origin: "autocomplete",
   };
 }
 
