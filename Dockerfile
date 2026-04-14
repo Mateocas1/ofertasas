@@ -42,11 +42,11 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Copy production dependencies
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=deps /app/packages/vtex-client/node_modules ./packages/vtex-client/node_modules
-COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
+# Copy production dependencies from builder to include generated Prisma client
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=builder /app/packages/vtex-client/node_modules ./packages/vtex-client/node_modules
+COPY --from=builder /app/packages/db/node_modules ./packages/db/node_modules
 
 # Copy built output
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
