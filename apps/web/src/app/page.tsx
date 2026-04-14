@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { Input } from '@/components/ui/input'
 import { useDebounce } from '@/hooks/use-debounce'
@@ -10,8 +11,17 @@ import { Product } from '@/types/api'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function Home() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchParams = useSearchParams()
+  const urlQuery = searchParams.get('q') || ''
+  const [searchQuery, setSearchQuery] = useState(urlQuery)
   const debouncedQuery = useDebounce(searchQuery, 300)
+  
+  // Sync state when URL changes (e.g., from header search or back button)
+  useEffect(() => {
+    if (urlQuery && urlQuery !== searchQuery) {
+      setSearchQuery(urlQuery)
+    }
+  }, [urlQuery])
   
   const { data: searchResults, isLoading, isError } = useQuery({
     queryKey: ['search', debouncedQuery],
@@ -22,6 +32,14 @@ export default function Home() {
     enabled: debouncedQuery.length > 0
   })
   
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      // Update URL to trigger the query
+      window.history.pushState({}, '', `/?q=${encodeURIComponent(searchQuery)}`)
+    }
+  }
+  
   if (isError) {
     return <div className="text-center p-8">Error al cargar los productos</div>
   }
@@ -30,12 +48,14 @@ export default function Home() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-center mb-8">Buscador de Precios</h1>
-        <Input
-          placeholder="Buscar productos..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md mx-auto"
-        />
+        <form onSubmit={handleSearch} className="flex justify-center">
+          <Input
+            placeholder="Buscar productos..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-md"
+          />
+        </form>
       </div>
       
       <div className="mb-4">

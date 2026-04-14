@@ -12,7 +12,6 @@ export function Header() {
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle search navigation
     if (searchQuery.trim()) {
       window.location.href = `/?q=${encodeURIComponent(searchQuery)}`
     }
@@ -27,7 +26,7 @@ export function Header() {
           </Link>
         </div>
         
-        <form onSubmit={handleSearch} className="flex-1 max-w-md mx-4 hidden md:block">
+        <form onSubmit={handleSearch} className="flex-1 max-w-md mx-4 hidden md:flex">
           <Input
             type="search"
             placeholder="Buscar productos..."
