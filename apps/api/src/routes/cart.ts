@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@ofertasas/db";
 import type { AddToCart, CartItemUpdate, CartItemDelete } from "../schemas/cart.js";
 
 const prisma = new PrismaClient();
@@ -94,11 +94,12 @@ export async function cartRoutes(app: FastifyInstance): Promise<void> {
       
       for (const item of cart.items) {
         // Calculate item total
-        const itemTotal = item.price * item.quantity;
+        const currentItem = item as any;
+        const itemTotal = currentItem.price * item.quantity;
         grandTotal += itemTotal;
         
         // Check for price changes
-        const priceChange = await calculatePriceChange(item.productId, item.supermarketId, item.price);
+        const priceChange = await calculatePriceChange(item.productId, item.supermarketId, currentItem.price);
         
         itemsWithPriceChanges.push({
           ...item,
@@ -116,7 +117,7 @@ export async function cartRoutes(app: FastifyInstance): Promise<void> {
         items: itemsWithPriceChanges,
         itemsByStore,
         grandTotal,
-        itemCount: cart.items.reduce((sum, item) => sum + item.quantity, 0)
+        itemCount: cart.items.reduce((sum: number, item: any) => sum + item.quantity, 0)
       });
     } catch (error) {
       request.log.error(error);

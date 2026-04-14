@@ -1,6 +1,6 @@
 import { Queue, type Job } from "bullmq";
 import { fetchVtexProducts, VTEX_STORES, getManagedHash as getHash, saveHash } from "@ofertasas/vtex-client";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@ofertasas/db";
 
 const prisma = new PrismaClient();
 

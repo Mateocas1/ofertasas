@@ -1,5 +1,5 @@
 import { Queue, type Job } from "bullmq";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@ofertasas/db";
 
 const prisma = new PrismaClient();
 

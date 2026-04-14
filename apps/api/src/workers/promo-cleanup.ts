@@ -1,5 +1,5 @@
 import { Queue, type Job } from "bullmq";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@ofertasas/db";
 
 const prisma = new PrismaClient();
 
@@ -33,7 +33,7 @@ export async function runPromoCleanup(): Promise<void> {
     
     // Update expired promotions
     if (expiredPromotions.length > 0) {
-      const ids = expiredPromotions.map(p => p.id);
+      const ids = expiredPromotions.map((p: any) => p.id);
       const result = await prisma.promotion.updateMany({
         where: {
           id: {

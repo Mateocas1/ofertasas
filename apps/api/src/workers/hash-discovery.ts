@@ -2,7 +2,7 @@ import { Queue, type Job } from "bullmq";
 import { chromium, type Page } from "playwright";
 import { VTEX_STORES, saveHash } from "@ofertasas/vtex-client";
 import redis from "../lib/redis.js";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@ofertasas/db";
 
 const prisma = new PrismaClient();
 

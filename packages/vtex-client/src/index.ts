@@ -20,8 +20,6 @@ export {
   VTEX_STORES,
   fetchVtexProducts,
   searchAcrossStores,
-  setHash,
-  getHash,
 } from "./client.js";
 
 // Normalizer

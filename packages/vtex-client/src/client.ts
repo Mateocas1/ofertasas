@@ -4,7 +4,7 @@ import type {
   StoreResult,
 } from "./types.js";
 import { normalizeProduct } from "./normalizer.js";
-import { getManagedHash } from "./hash-manager.js";
+import { getHash } from "./hash-manager.js";
 
 // ============================================
 // VTEX Store Configurations
@@ -27,21 +27,6 @@ export const VTEX_STORES: Record<
     baseUrl: "https://www.disco.com.ar",
   },
 };
-
-// ============================================
-// Hash Storage (in-memory placeholder)
-// In production, this will use Redis
-// ============================================
-
-const hashStore = new Map<string, string>();
-
-export function setHash(store: string, hash: string): void {
-  hashStore.set(store, hash);
-}
-
-export function getHash(store: string): string | undefined {
-  return hashStore.get(store);
-}
 
 // ============================================
 // VTEX Query Builder
@@ -179,7 +164,7 @@ export async function fetchVtexProducts(
   source: string,
   count: number = 50
 ): Promise<NormalizedProduct[]> {
-  const hash = await getManagedHash(source);
+  const hash = await getHash(source);
   if (!hash) {
     console.warn(
       `[vtex-client] No hash found for ${source}. Skipping.`
@@ -194,7 +179,7 @@ export async function fetchVtexProducts(
 
   try {
     const response = await fetchWithRetry(url);
-    const data: VtexProductSuggestionsResponse = await response.json();
+    const data = (await response.json()) as VtexProductSuggestionsResponse;
 
     if (data.errors && data.errors.length > 0) {
       console.error(

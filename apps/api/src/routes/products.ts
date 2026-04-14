@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 import redis from "../lib/redis.js";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@ofertasas/db";
 import type { EanParam } from "../schemas/common.js";
 
 const prisma = new PrismaClient();
@@ -298,7 +298,7 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
       
       // Group by supermarketId for easy chart consumption
       const groupedHistory: Record<number, any[]> = {};
-      priceHistory.forEach(record => {
+      priceHistory.forEach((record: any) => {
         if (!groupedHistory[record.supermarketId]) {
           groupedHistory[record.supermarketId] = [];
         }
