@@ -11,6 +11,7 @@ import { searchRoutes } from './routes/search.js';
 import { productRoutes } from './routes/products.js';
 import { cartRoutes } from './routes/cart.js';
 import { adminRoutes } from './routes/admin.js';
+import { hashRoutes } from './routes/hash.js';
 
 // Initialize Fastify app
 const app = fastify({ logger: true });
@@ -43,6 +44,7 @@ await app.register(helmet, {
 await app.register(sessionPlugin);
 
 // Register routes
+await app.register(hashRoutes);
 await app.register(searchRoutes);
 await app.register(productRoutes);
 await app.register(cartRoutes);
