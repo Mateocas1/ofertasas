@@ -13,46 +13,37 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCartStore()
   
-  // Convert the API response structure to what the component expects
-  const convertProductStructure = () => {
-    // The API returns prices as an object with store names as keys
-    // Convert to array format expected by the component
-    const priceArray: any[] = [];
-    if (product.prices) {
-      for (const [storeName, priceInfo] of Object.entries(product.prices)) {
-        const p = priceInfo as any;
-        priceArray.push({
-          supermarket: { name: storeName },
-          sellingPrice: p.sellingPrice ?? p.price,
-          listPrice: p.listPrice,
-          referencePrice: p.referencePrice,
-          isAvailable: p.isAvailable,
-          supermarketId: storeName
-        });
-      }
+  // Normalize prices to array format (API might return object or array)
+  const getPricesArray = () => {
+    if (!product.prices) return [];
+    
+    // If already an array, use it directly
+    if (Array.isArray(product.prices)) {
+      return product.prices;
     }
     
-    // Find the cheapest store
-    let cheapestStore = "";
-    let cheapestPrice = Infinity;
-    for (const [storeName, priceInfo] of Object.entries(product.prices || {})) {
-      const p = priceInfo as any;
-      const price = p.sellingPrice ?? p.price;
-      if (price && price < cheapestPrice) {
-        cheapestPrice = price;
-        cheapestStore = storeName;
-      }
-    }
-    
-    return {
-      ...product,
-      prices: priceArray,
-      cheapestStore
-    };
-  }
+    // If it's an object, convert to array (for backward compatibility)
+    return Object.entries(product.prices).map(([storeName, priceInfo]: any) => ({
+      supermarketId: storeName,
+      sellingPrice: priceInfo.sellingPrice ?? priceInfo.price,
+      listPrice: priceInfo.listPrice,
+      referencePrice: priceInfo.referencePrice,
+      isAvailable: priceInfo.isAvailable,
+    }));
+  };
   
-  const convertedProduct = convertProductStructure();
-  const cheapestStore = convertedProduct.cheapestStore;
+  const pricesArray = getPricesArray();
+  
+  // Find the cheapest store
+  let cheapestStore = "";
+  let cheapestPrice = Infinity;
+  for (const price of pricesArray) {
+    const currentPrice = price.sellingPrice ?? 0;
+    if (currentPrice && currentPrice < cheapestPrice) {
+      cheapestPrice = currentPrice;
+      cheapestStore = price.supermarketId;
+    }
+  }
   
   return (
     <Card className="w-full">
@@ -79,14 +70,18 @@ export function ProductCard({ product }: ProductCardProps) {
         )}
         
         <div className="grid grid-cols-3 gap-1 mb-2">
-          {convertedProduct.prices.map((price) => {
+          {pricesArray.map((price) => {
             const isCheapest = cheapestStore === price.supermarketId
+            // Normalize supermarketId to display name
+            const storeName = typeof price.supermarketId === 'string' 
+              ? price.supermarketId.charAt(0).toUpperCase() + price.supermarketId.slice(1)
+              : price.supermarketId;
             return (
               <div 
                 key={`${product.ean}-${price.supermarketId}`} 
                 className={`p-1 rounded text-xs ${isCheapest ? 'bg-green-100 border border-green-300' : ''}`}
               >
-                <div className="font-medium">{price.supermarket.name}</div>
+                <div className="font-medium">{storeName}</div>
                 {price.sellingPrice !== null ? (
                   <>
                     <div className="font-semibold">
@@ -112,8 +107,8 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
         
         <div className="flex flex-wrap gap-1 mb-2">
-          {product.promotions?.map((promo: any) => (
-            <Badge key={promo.id} variant="secondary" className="text-xs">
+          {product.promotions?.map((promo: any, idx: number) => (
+            <Badge key={`${product.ean}-promo-${idx}`} variant="secondary" className="text-xs">
               {promo.description}
             </Badge>
           ))}
@@ -124,16 +119,19 @@ export function ProductCard({ product }: ProductCardProps) {
           size="sm"
           onClick={() => {
             // Add to cart from the cheapest available store by default
-            if (cheapestStore && (product.prices as any)?.[cheapestStore]) {
-              addItem({
-                productId: product.ean,
-                productName: product.name,
-                productImage: product.image ?? product.imageUrl ?? '',
-                supermarketId: cheapestStore,
-                supermarketName: cheapestStore,
-                price: (product.prices as any)[cheapestStore]?.sellingPrice ?? (product.prices as any)[cheapestStore]?.price ?? 0,
-                quantity: 1
-              })
+            if (cheapestStore) {
+              const selectedPrice = pricesArray.find(p => p.supermarketId === cheapestStore);
+              if (selectedPrice) {
+                addItem({
+                  productId: product.ean,
+                  productName: product.name,
+                  productImage: product.image ?? product.imageUrl ?? '',
+                  supermarketId: cheapestStore,
+                  supermarketName: cheapestStore,
+                  price: selectedPrice.sellingPrice ?? 0,
+                  quantity: 1
+                })
+              }
             }
           }}
         >
