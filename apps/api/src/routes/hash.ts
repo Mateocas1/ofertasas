@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { discoverHashForStore, discoverAllHashes } from "../lib/hash-discovery.js";
+import redis from "../lib/redis.js";
 
 /**
  * Routes for hash discovery and management
@@ -7,7 +8,7 @@ import { discoverHashForStore, discoverAllHashes } from "../lib/hash-discovery.j
  * Endpoints:
  * - POST /api/hash/discover - Discover all hashes
  * - POST /api/hash/discover/:store - Discover hash for specific store
- * - GET /api/hash/status - Check which hashes are cached
+ * - POST /api/hash/reset - Clear all cached hashes and rediscover
  */
 export async function hashRoutes(app: FastifyInstance): Promise<void> {
   // Discover all hashes
@@ -67,4 +68,29 @@ export async function hashRoutes(app: FastifyInstance): Promise<void> {
       }
     }
   );
+
+  // Reset all cached hashes (admin endpoint)
+  app.post("/api/hash/reset", async (request, reply) => {
+    try {
+      // Clear Redis cache for all hashes
+      const stores = ["disco", "carrefour", "jumbo"];
+      for (const store of stores) {
+        await redis.del(`vtex:hash:discovery:${store}`);
+      }
+
+      request.log.info("Hash cache cleared");
+
+      return reply.send({
+        success: true,
+        message: "Hash cache cleared",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({
+        error: "Reset failed",
+        message: (error as Error).message,
+      });
+    }
+  });
 }
