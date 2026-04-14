@@ -91,6 +91,24 @@ function getSearchCacheKey(query: string, stores: string[]): string {
 }
 
 export async function searchRoutes(app: FastifyInstance): Promise<void> {
+  // POST /api/search/cache/clear - Debug endpoint to clear search cache
+  app.post("/api/search/cache/clear", async (request, reply) => {
+    try {
+      const keys = await redis.keys("search:*");
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+      return reply.send({ 
+        success: true, 
+        message: `Cleared ${keys.length} search cache entries`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      request.log.error(error);
+      return reply.status(500).send({ error: "Failed to clear cache" });
+    }
+  });
+
   // GET /api/search?q={query}&stores={store1,store2}
   app.get<{
     Querystring: SearchQuery
