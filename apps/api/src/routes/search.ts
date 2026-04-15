@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { searchAcrossStores } from "@ofertasas/vtex-client";
 import redis from "../lib/redis.js";
+import { syncProductsToDb } from "../lib/db-sync.js";
 import type { StoreResult, NormalizedProduct } from "@ofertasas/vtex-client";
 import type { SearchQuery } from "../schemas/search.js";
 
@@ -183,6 +184,11 @@ export async function searchRoutes(app: FastifyInstance): Promise<void> {
       
        // Group results by EAN and get failures
        const { groupedProducts, failures } = groupProductsByEan(storeResults);
+       
+       // Trigger DB sync in the background
+       syncProductsToDb(storeResults).catch(err => 
+         request.log.error({ err }, "Background DB sync failed")
+       );
        
        // Convert to frontend format
        const convertedProducts = groupedProducts.map(convertToFrontendFormat);
