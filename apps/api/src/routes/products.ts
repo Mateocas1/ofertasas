@@ -98,16 +98,86 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         }
       });
       
-      const result = {
-        ...product,
-        prices: latestPrices,
-        promotions
-      };
-      
-      // Cache for 6 hours
-      await redis.setex(cacheKey, 21600, JSON.stringify(result));
-      
-      return reply.send(result);
+        // Get price history (last 30 days)
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - 30);
+
+        const priceHistoryRecords = await prisma.price.findMany({
+          where: {
+            productId: product.id,
+            recordedAt: {
+              gte: fromDate
+            }
+          },
+          orderBy: {
+            recordedAt: 'asc'
+          },
+          select: {
+            recordedAt: true,
+            supermarketId: true,
+            sellingPrice: true,
+          }
+        });
+
+        // Group price history by supermarket
+        const groupedPriceHistory: Record<string, { date: string; price: number }[]> = {};
+        for (const record of priceHistoryRecords) {
+          const supermarketId = record.supermarketId;
+          const supermarket = await prisma.supermarket.findUnique({
+            where: { id: supermarketId },
+            select: { name: true }
+          });
+
+          if (!supermarket) continue;
+
+          if (!groupedPriceHistory[supermarket.name]) {
+            groupedPriceHistory[supermarket.name] = [];
+          }
+
+          groupedPriceHistory[supermarket.name].push({
+            date: record.recordedAt.toISOString(),
+            price: record.sellingPrice || 0
+          });
+        }
+
+        // Calculate price history stats
+        const allPrices = priceHistoryRecords.map(r => r.sellingPrice || 0).filter(p => p > 0);
+        const minPrice = allPrices.length ? Math.min(...allPrices) : null;
+        const maxPrice = allPrices.length ? Math.max(...allPrices) : null;
+        const latestPrice = allPrices.length ? allPrices[allPrices.length - 1] : null;
+        const firstPrice = allPrices.length ? allPrices[0] : null;
+        const avgPrice = allPrices.length ? allPrices.reduce((sum, val) => sum + val, 0) / allPrices.length : null;
+
+        let inflation = "STABLE";
+        if (firstPrice && latestPrice) {
+          const inflationPct = ((latestPrice - firstPrice) / firstPrice) * 100;
+          if (inflationPct > 10) inflation = "UP";
+          if (inflationPct < -5) inflation = "DOWN";
+        }
+
+        const result = {
+          ...product,
+          prices: latestPrices,
+          promotions,
+          priceHistory: {
+            history: Object.entries(groupedPriceHistory).map(([supermarketId, data]) => ({
+              supermarketId,
+              data
+            })),
+            summary: {
+              min: minPrice,
+              max: maxPrice,
+              avg: avgPrice,
+              trend: inflation as "UP" | "DOWN" | "STABLE",
+              samples: allPrices.length
+            }
+          }
+        };
+
+        // Cache for 6 hours
+        await redis.setex(cacheKey, 21600, JSON.stringify(result));
+
+        return reply.send(result);
     } catch (error) {
       request.log.error(error);
       return reply.status(500).send({ error: "Failed to fetch product details" });
