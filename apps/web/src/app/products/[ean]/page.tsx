@@ -1,13 +1,49 @@
 import { Suspense } from "react";
 import { apiGet } from "@/lib/api";
 import { notFound } from "next/navigation";
-import type { Product } from "@/types/api";
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useCartStore } from "@/stores/cart";
-import { PriceHistoryChart } from "@/components/products/price-history-chart";
+import { PriceHistoryChart } from "@/components/price-history-chart";
+
+interface ProductPrice {
+  supermarketId: string;
+  supermarket?: { name: string };
+  sellingPrice: number | null;
+  listPrice: number | null;
+  referencePrice: number | null;
+  isAvailable: boolean;
+}
+
+interface ProductPromotion {
+  id: string;
+  type: string;
+  description: string;
+  walletProvider?: string;
+  discountValue?: number;
+}
+
+interface Product {
+  name: string;
+  brand?: string;
+  category?: string;
+  imageUrl?: string;
+  prices: ProductPrice[];
+  promotions: ProductPromotion[];
+  priceHistory: {
+    history: Array<{
+      supermarketId: string;
+      data: Array<{ date: string; price: number }>;
+    }>;
+    summary: {
+      trend: "UP" | "DOWN" | "STABLE";
+      min: number | null;
+      max: number | null;
+      avg: number | null;
+      samples: number;
+      inflation?: string | null;
+    };
+  };
+}
 
 interface ProductPageProps {
   params: Promise<{ ean: string }>;
@@ -20,16 +56,16 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   try {
     const product = await apiGet<Product>(`/api/products/${ean}`);
     return {
-      title: `${product.name} | oferTASAS`,
+      title: `${product.name} | oferTAS`,
       description: `Compará precios de ${product.name} en Carrefour, Jumbo y Disco. Encontrá el mejor precio.`,
       openGraph: {
-        title: `${product.name} | oferTASAS`,
+        title: `${product.name} | oferTAS`,
         description: `Compará precios de ${product.name} en supermercados argentinos`,
         images: product.imageUrl ? [product.imageUrl] : [],
       },
     };
   } catch {
-    return { title: "Producto no encontrado | oferTASAS" };
+    return { title: "Producto no encontrado | oferTAS" };
   }
 }
 
@@ -42,10 +78,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     if (!product) {
       notFound();
     }
-
-    // Fetch history data for the chart
-    const historyData = await apiGet<any>(`/api/products/${ean}/history?days=30`);
-    const supermarkets = await apiGet<Array<{ id: number; name: string }>>("/api/supermarkets");
 
     return (
       <div className="container mx-auto py-8">
@@ -145,12 +177,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
           {/* Price History Chart */}
           <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">
-              Historial de Precios
-            </h2>
-            <div className="border rounded-lg p-4">
-              <PriceHistoryChart data={historyData.prices} supermarkets={supermarkets} />
-            </div>
+            <PriceHistoryChart history={product.priceHistory} />
           </div>
 
           {/* Promotions */}

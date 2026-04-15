@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react'
 import { TrendingUp, Verified } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { CartItem } from '@/types/api'
-import { useCartStore } from '@/stores/cart'
+import type { CartItem } from '@/stores/cart'
 
 type SavingsSummaryProps = {
   items: CartItem[]
@@ -18,7 +17,6 @@ type SavingsSummaryProps = {
  * - Trust score for deal quality
  */
 export function SavingsSummary({ items }: SavingsSummaryProps) {
-  const { cart } = useCartStore()
   const [savingsReport, setSavingsReport] = useState<{
     totalSavings: number
     comparisonStores: { cheap: string; expensive: string }
