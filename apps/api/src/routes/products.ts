@@ -119,22 +119,22 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
           }
         });
 
-        // Group price history by supermarket
+        // Get all supermarket names in one query (avoid N+1)
+        const supermarketIds = [...new Set(priceHistoryRecords.map(r => r.supermarketId))];
+        const supermarkets = await prisma.supermarket.findMany({
+          where: { id: { in: supermarketIds } },
+          select: { id: true, name: true }
+        });
+        const supermarketMap = new Map(supermarkets.map(s => [s.id, s.name]));
+
+        // Group price history by supermarket name
         const groupedPriceHistory: Record<string, { date: string; price: number }[]> = {};
         for (const record of priceHistoryRecords) {
-          const supermarketId = record.supermarketId;
-          const supermarket = await prisma.supermarket.findUnique({
-            where: { id: supermarketId },
-            select: { name: true }
-          });
-
-          if (!supermarket) continue;
-
-          if (!groupedPriceHistory[supermarket.name]) {
-            groupedPriceHistory[supermarket.name] = [];
+          const supermarketName = supermarketMap.get(record.supermarketId) || `store-${record.supermarketId}`;
+          if (!groupedPriceHistory[supermarketName]) {
+            groupedPriceHistory[supermarketName] = [];
           }
-
-          groupedPriceHistory[supermarket.name].push({
+          groupedPriceHistory[supermarketName].push({
             date: record.recordedAt.toISOString(),
             price: record.sellingPrice || 0
           });
@@ -179,8 +179,9 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
 
         return reply.send(result);
     } catch (error) {
-      request.log.error(error);
-      return reply.status(500).send({ error: "Failed to fetch product details" });
+      request.log.error({ error, ean }, "Failed to fetch product details");
+      const message = error instanceof Error ? error.message : "Failed to fetch product details";
+      return reply.status(500).send({ error: "Failed to fetch product details", details: message });
     }
   });
   
