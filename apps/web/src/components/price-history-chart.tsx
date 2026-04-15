@@ -306,9 +306,9 @@ export function PriceHistoryChart({ history }: PriceHistoryChartProps) {
         <span className="ml-2 text-sm text-text-secondary">{getTrendText()}</span>
       </div>
       
-      <div className="h-80">
-        <Line data={chartData} options={options} />
-      </div>
+              <div className="h-80 md:h-96">
+                <Line data={chartData} options={options} />
+              </div>
       
       {/* Key indicators */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
