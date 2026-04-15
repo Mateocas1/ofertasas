@@ -1,9 +1,106 @@
 import { FastifyInstance } from "fastify";
 import redis from "../lib/redis.js";
 import { PrismaClient } from "@ofertasas/db";
+import { searchAcrossStores } from "@ofertasas/vtex-client";
 import type { EanParam } from "../schemas/common.js";
 
 const prisma = new PrismaClient();
+
+/**
+ * Format VTEX search results into the product detail response format
+ * that the frontend expects — matching the same shape as the DB query.
+ */
+function formatVtexProductAsDetail(vtexResults: Awaited<ReturnType<typeof searchAcrossStores>>, ean: string) {
+  const prices: Array<{
+    supermarketId: string;
+    supermarket: { name: string };
+    sellingPrice: number | null;
+    listPrice: number | null;
+    referencePrice: number | null;
+    isAvailable: boolean;
+  }> = [];
+
+  const allPromotions: Array<{
+    id: string;
+    type: string;
+    description: string;
+    discountValue: number | null;
+    walletProvider: string | null;
+    supermarket: { name: string };
+  }> = [];
+
+  let productName = "";
+  let productBrand = "";
+  let productImage = "";
+
+  for (const store of vtexResults) {
+    if (!store.success) continue;
+
+    for (const product of store.products) {
+      if (product.ean === ean) {
+        if (!productName) {
+          productName = product.name;
+          productBrand = product.brand;
+          productImage = product.image;
+        }
+
+        prices.push({
+          supermarketId: store.store,
+          supermarket: { name: store.store.charAt(0).toUpperCase() + store.store.slice(1) },
+          sellingPrice: product.price,
+          listPrice: product.listPrice,
+          referencePrice: product.referencePrice,
+          isAvailable: product.isAvailable,
+        });
+
+        // Add promotions from this store
+        if (product.promotions) {
+          for (const promo of product.promotions) {
+            allPromotions.push({
+              id: `${store.store}-${promo.type}-${promo.description}`.slice(0, 50),
+              type: promo.type,
+              description: promo.description,
+              discountValue: promo.discountValue,
+              walletProvider: promo.walletProvider,
+              supermarket: { name: store.store.charAt(0).toUpperCase() + store.store.slice(1) },
+            });
+          }
+        }
+      }
+    }
+  }
+
+  if (prices.length === 0) return null;
+
+  // Calculate cheapest
+  const availablePrices = prices.filter(p => p.isAvailable && p.sellingPrice !== null);
+  const sortedPrices = [...availablePrices].sort((a, b) => (a.sellingPrice ?? Infinity) - (b.sellingPrice ?? Infinity));
+
+  return {
+    ean,
+    name: productName,
+    brand: productBrand,
+    imageUrl: productImage,
+    image: productImage,
+    prices,
+    promotions: allPromotions,
+    cheapest: sortedPrices[0]?.supermarketId || "",
+    // No price history from VTEX — it's real-time data only
+    priceHistory: {
+      history: [],
+      summary: {
+        min: sortedPrices.length ? sortedPrices[0]?.sellingPrice ?? null : null,
+        max: sortedPrices.length ? sortedPrices[sortedPrices.length - 1]?.sellingPrice ?? null : null,
+        avg: sortedPrices.length
+          ? sortedPrices.reduce((sum, p) => sum + (p.sellingPrice ?? 0), 0) / sortedPrices.length
+          : null,
+        trend: "STABLE" as const,
+        samples: 0,
+        inflation: null,
+      },
+    },
+  };
+}
 
 export async function productRoutes(app: FastifyInstance): Promise<void> {
   // Add a route to get all supermarkets
@@ -40,7 +137,7 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
     const { ean } = request.params;
     
     try {
-      // Try cache first
+      // 1. Try cache first
       const cacheKey = `product:${ean}`;
       const cached = await redis.get(cacheKey);
       
@@ -48,7 +145,7 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         return reply.send(JSON.parse(cached));
       }
       
-      // Fetch product with latest prices and active promotions
+      // 2. Try PostgreSQL
       const product = await prisma.product.findUnique({
         where: { ean },
         include: {
@@ -61,43 +158,39 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         }
       });
       
-      if (!product) {
-        return reply.status(404).send({ error: "Product not found" });
-      }
-      
-      // Get latest prices per supermarket (latest recordedAt per supermarketId)
-      const latestPrices = await prisma.$queryRaw`
-        SELECT DISTINCT ON ("supermarketId") 
-          p.*,
-          s."id" as "supermarketId",
-          s."name" as "supermarketName"
-        FROM "Price" p
-        JOIN "Supermarket" s ON p."supermarketId" = s."id"
-        WHERE p."productId" = ${product.id} 
-        AND p."recordedAt" = (
-          SELECT MAX("recordedAt") 
-          FROM "Price" p2 
-          WHERE p2."productId" = p."productId" 
-          AND p2."supermarketId" = p."supermarketId"
-        )
-        ORDER BY p."recordedAt" DESC
-      `;
-      
-      // Get active promotions
-      const promotions = await prisma.promotion.findMany({
-        where: {
-          product: { ean },
-          isActive: true
-        },
-        include: {
-          supermarket: {
-            select: {
-              name: true
+      if (product) {
+        // Product found in DB — build full response with price history
+        const latestPrices = await prisma.$queryRaw`
+          SELECT DISTINCT ON ("supermarketId") 
+            p.*,
+            s."id" as "supermarketId",
+            s."name" as "supermarketName"
+          FROM "Price" p
+          JOIN "Supermarket" s ON p."supermarketId" = s."id"
+          WHERE p."productId" = ${product.id} 
+          AND p."recordedAt" = (
+            SELECT MAX("recordedAt") 
+            FROM "Price" p2 
+            WHERE p2."productId" = p."productId" 
+            AND p2."supermarketId" = p."supermarketId"
+          )
+          ORDER BY p."recordedAt" DESC
+        `;
+        
+        const promotions = await prisma.promotion.findMany({
+          where: {
+            product: { ean },
+            isActive: true
+          },
+          include: {
+            supermarket: {
+              select: {
+                name: true
+              }
             }
           }
-        }
-      });
-      
+        });
+        
         // Get price history (last 30 days)
         const fromDate = new Date();
         fromDate.setDate(fromDate.getDate() - 30);
@@ -169,7 +262,8 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
               max: maxPrice,
               avg: avgPrice,
               trend: inflation as "UP" | "DOWN" | "STABLE",
-              samples: allPrices.length
+              samples: allPrices.length,
+              inflation: null as string | null,
             }
           }
         };
@@ -178,6 +272,22 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         await redis.setex(cacheKey, 21600, JSON.stringify(result));
 
         return reply.send(result);
+      }
+
+      // 3. Not in DB — Fallback to VTEX live search
+      request.log.info({ ean }, "Product not in DB, searching VTEX");
+      
+      const vtexResults = await searchAcrossStores(ean, ["carrefour", "jumbo", "disco"]);
+      const vtexProduct = formatVtexProductAsDetail(vtexResults, ean);
+      
+      if (!vtexProduct) {
+        return reply.status(404).send({ error: "Product not found" });
+      }
+      
+      // Cache VTEX result for 30 minutes (shorter, it's live data)
+      await redis.setex(cacheKey, 1800, JSON.stringify(vtexProduct));
+      
+      return reply.send(vtexProduct);
     } catch (error) {
       request.log.error({ error, ean }, "Failed to fetch product details");
       const message = error instanceof Error ? error.message : "Failed to fetch product details";
