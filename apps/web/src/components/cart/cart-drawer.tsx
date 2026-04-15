@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { SavingsSummary } from "@/components/savings-summary";
 
 interface CartDrawerProps {
   open: boolean;
@@ -71,94 +72,102 @@ export function CartDrawer({ open, onOpenChange }: CartDrawerProps) {
             </DrawerDescription>
           </DrawerHeader>
 
-          <div className="px-4 overflow-y-auto max-h-[50vh]">
-            {items.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">Tu carrito está vacío</p>
-                <DrawerClose asChild>
-                  <Button variant="outline">Explorar productos</Button>
-                </DrawerClose>
-              </div>
-            ) : (
-              storeEntries.map(([storeId, storeItems]) => {
-                const storeName = storeItems[0]?.supermarketName ?? storeId;
-                const storeSubtotal = storeItems.reduce(
-                  (sum, item) => sum + item.price * item.quantity,
-                  0
-                );
+      <div className="px-4 overflow-y-auto max-h-[40vh] space-y-4">
+        {items.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 mb-4">Tu carrito está vacío</p>
+            <DrawerClose asChild>
+              <Button variant="outline">Explorar productos</Button>
+            </DrawerClose>
+          </div>
+        ) : (
+          <>
+            {/* Items list */}
+            {storeEntries.map(([storeId, storeItems]) => {
+              const storeName = storeItems[0]?.supermarketName ?? storeId;
+              const storeSubtotal = storeItems.reduce(
+                (sum, item) => sum + item.price * item.quantity,
+                0
+              );
 
-                return (
-                  <div key={storeId} className="mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-semibold text-sm text-gray-700">
-                        {storeName}
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        Subtotal: ${storeSubtotal.toLocaleString("es-AR")}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {storeItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
-                        >
-                          {item.productImage && (
-                            <img
-                              src={item.productImage}
-                              alt={item.productName}
-                              className="w-10 h-10 object-contain rounded"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {item.productName}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              ${item.price.toLocaleString("es-AR")}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
-                            >
-                              -
-                            </Button>
-                            <span className="w-6 text-center text-sm">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0"
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
-                            >
-                              +
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
-                              onClick={() => handleRemove(item)}
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+              return (
+                <div key={storeId} className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold text-sm text-gray-700">
+                      {storeName}
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      Subtotal: ${storeSubtotal.toLocaleString("es-AR")}
+                    </span>
                   </div>
-                );
-              })
-            )}
+
+                  <div className="space-y-2">
+                    {storeItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
+                      >
+                        {item.productImage && (
+                          <img
+                            src={item.productImage}
+                            alt={item.productName}
+                            className="w-10 h-10 object-contain rounded"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {item.productName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            ${item.price.toLocaleString("es-AR")}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 p-0"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity - 1)
+                            }
+                          >
+                            -
+                          </Button>
+                          <span className="w-6 text-center text-sm">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 w-7 p-0"
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
+                          >
+                            +
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                            onClick={() => handleRemove(item)}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Savings Intelligence Section */}
+            <div className="pt-4">
+              <SavingsSummary items={items} />
+            </div>
+          </>
+        )}
           </div>
 
           {/* Undo toast */}
