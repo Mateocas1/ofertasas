@@ -29,7 +29,7 @@ ChartJS.register(
   Legend
 )
 
-// Define TypeScript interfaces
+// TypeScript interfaces
 interface PriceHistoryDataPoint {
   date: string
   price: number
@@ -41,23 +41,20 @@ interface PriceHistoryStore {
 }
 
 interface PriceHistorySummary {
-  trend: 'UP' | 'DOWN' | 'STABLE' | null
+  trend: 'UP' | 'DOWN' | 'STABLE'
   min: number | null
-  avg: number | null
   max: number | null
-  inflation: string | null
+  avg: number | null
   samples: number
 }
 
-interface PriceHistoryResponse {
-  ean: string
-  createdAt: string
-  summary: PriceHistorySummary
+interface PriceHistory {
   history: PriceHistoryStore[]
+  summary: PriceHistorySummary
 }
 
 interface PriceHistoryChartProps {
-  history: PriceHistoryResponse
+  history: PriceHistory
 }
 
 // Helper function to format date for display

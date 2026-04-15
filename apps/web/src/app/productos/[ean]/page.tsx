@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { apiGet } from '@/lib/api'
 import { useCartStore } from '@/stores/cart'
 import { ArrowLeft, TrendingDown, TrendingUp, TrendingUpDown, Gift } from 'lucide-react'
-import PriceHistoryChart from '@/components/price-history-chart'
+import { PriceHistoryChart } from '@/components/price-history-chart'
 
 export default function ProductDetailPage() {
   const params = useParams()
@@ -23,19 +23,6 @@ export default function ProductDetailPage() {
       const response = await apiGet<any>(`/api/products/${ean}`)
       return response
     }
-  })
-  
-  // Extracted from product.data
-  const priceHistory = product?.priceHistory
-
-  // Fetch price history
-  const { data: priceHistory, isLoading: isPriceHistoryLoading } = useQuery({
-    queryKey: ['priceHistory', ean],
-    queryFn: async () => {
-      const response = await apiGet<any>(`/api/price-history/${ean}`)
-      return response
-    },
-    enabled: !!ean
   })
 
   if (isProductLoading) {
@@ -249,36 +236,36 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-        {/* Add to Cart CTA */}
-        <Button
-          className="w-full h-12 text-lg bg-brand-accent hover:bg-blue-700 text-white font-semibold"
-          onClick={() => {
-            if (cheapestStore) {
-              const selectedPrice = pricesArray.find((p: any) => p.supermarketId === cheapestStore);
-              if (selectedPrice) {
-                addItem({
-                  productId: product.ean,
-                  productName: product.name,
-                  productImage: product.image ?? product.imageUrl ?? '',
-                  supermarketId: cheapestStore,
-                  supermarketName: cheapestStore,
-                  price: selectedPrice.sellingPrice ?? 0,
-                  quantity: 1
-                })
-              }
-            }
-          }}
-        >
-          Comprar en {cheapestStore.charAt(0).toUpperCase() + cheapestStore.slice(1)}
-        </Button>
+            {/* Add to Cart CTA */}
+            <Button
+              className="w-full h-12 text-lg bg-brand-accent hover:bg-blue-700 text-white font-semibold"
+              onClick={() => {
+                if (cheapestStore) {
+                  const selectedPrice = pricesArray.find((p: any) => p.supermarketId === cheapestStore);
+                  if (selectedPrice) {
+                    addItem({
+                      productId: product.ean,
+                      productName: product.name,
+                      productImage: product.image ?? product.imageUrl ?? '',
+                      supermarketId: cheapestStore,
+                      supermarketName: cheapestStore,
+                      price: selectedPrice.sellingPrice ?? 0,
+                      quantity: 1
+                    })
+                  }
+                }
+              }}
+            >
+              Comprar en {cheapestStore.charAt(0).toUpperCase() + cheapestStore.slice(1)}
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
   {/* Price History Chart */}
-  {priceHistory && (
-    <PriceHistoryChart history={priceHistory} />
+  {product.priceHistory && (
+    <PriceHistoryChart history={product.priceHistory} />
   )}
-</div>
-)
+    </div>
+  )
 }
