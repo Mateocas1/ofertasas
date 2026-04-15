@@ -19,16 +19,6 @@ import { adminRoutes } from './routes/admin.js';
 import { hashRoutes } from './routes/hash.js';
 
 
-// Declare fake modules to prevent TS import errors
-// These modules are used inlined inside search.ts, no longer standalone
-declare module './routes/price-history.js' {
-  const content: any;
-  export = content;
-}
-declare module './workers/price-tracker.js' {
-  export function initializePriceTracker(): void;
-}
-
 // Initialize Fastify app
 const app = fastify({ logger: true });
 

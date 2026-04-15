@@ -46,6 +46,7 @@ interface PriceHistorySummary {
   max: number | null
   avg: number | null
   samples: number
+  inflation?: string | null
 }
 
 interface PriceHistory {
