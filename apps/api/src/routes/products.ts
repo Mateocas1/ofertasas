@@ -116,7 +116,8 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
       return reply.send(supermarkets);
     } catch (error) {
       request.log.error(error);
-      return reply.status(500).send({ error: "Failed to fetch supermarkets" });
+      // If DB tables don't exist yet, return empty array instead of 500
+      return reply.send([]);
     }
   });
   
@@ -145,18 +146,24 @@ export async function productRoutes(app: FastifyInstance): Promise<void> {
         return reply.send(JSON.parse(cached));
       }
       
-      // 2. Try PostgreSQL
-      const product = await prisma.product.findUnique({
-        where: { ean },
-        include: {
-          supermarket: {
-            select: {
-              id: true,
-              name: true
+      // 2. Try PostgreSQL (may fail if tables don't exist yet)
+      let product: any = null;
+      try {
+        product = await prisma.product.findUnique({
+          where: { ean },
+          include: {
+            supermarket: {
+              select: {
+                id: true,
+                name: true
+              }
             }
           }
-        }
-      });
+        });
+      } catch (dbError) {
+        request.log.warn({ error: dbError, ean }, "Database query failed, falling back to VTEX");
+        // Tables may not exist yet — fall through to VTEX
+      }
       
       if (product) {
         // Product found in DB — build full response with price history
