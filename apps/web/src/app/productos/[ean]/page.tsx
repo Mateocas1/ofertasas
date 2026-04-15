@@ -25,15 +25,8 @@ export default function ProductDetailPage() {
     }
   })
   
-  // Fetch price history
-  const { data: priceHistory, isLoading: isHistoryLoading } = useQuery({
-    queryKey: ['price-history', ean],
-    queryFn: async () => {
-      const response = await apiGet<any>(`/api/price-history/${ean}`)
-      return response
-    },
-    enabled: !!ean
-  })
+  // Extracted from product.data
+  const priceHistory = product?.priceHistory
 
   // Fetch price history
   const { data: priceHistory, isLoading: isPriceHistoryLoading } = useQuery({
@@ -283,7 +276,7 @@ export default function ProductDetailPage() {
   </div>
 
   {/* Price History Chart */}
-  {!isHistoryLoading && priceHistory && (
+  {priceHistory && (
     <PriceHistoryChart history={priceHistory} />
   )}
 </div>
