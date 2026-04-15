@@ -12,6 +12,7 @@ export interface Product {
   promotions: Promotion[];
   createdAt: Date;
   updatedAt: Date;
+  priceHistory?: PriceHistory; // Add priceHistory property
 }
 
 export interface Price {
@@ -49,7 +50,7 @@ export interface CartItem {
   supermarketId: string;
   price: number;
   quantity: number;
-  addedAt: Date;
+  addedAt: string | Date; // Harmonized runtime string vs compile-time Date
 }
 
 export interface SearchResult {
@@ -68,6 +69,38 @@ export interface SearchResult {
 }
 
 export interface StoreResult {
+  id: string;
+  name: string;
+  baseUrl: string;
+  products: Product[];
+  prices: Price[];
+  promotions: Promotion[];
+}
+
+export interface PriceHistoryDataPoint {
+  date: string;
+  price: number;
+}
+
+export interface PriceHistoryStore {
+  supermarketId: string;
+  data: PriceHistoryDataPoint[];
+}
+
+export interface PriceHistorySummary {
+  min: number | null;
+  max: number | null;
+  avg: number | null;
+  trend: 'UP' | 'DOWN' | 'STABLE';
+  samples: number;
+}
+
+export interface PriceHistory {
+  history: PriceHistoryStore[];
+  summary: PriceHistorySummary;
+}
+
+export interface Store {
   id: string;
   name: string;
   baseUrl: string;

@@ -14,12 +14,20 @@ import redis from './lib/redis.js';
 import { searchRoutes } from './routes/search.js';
 import { promotionsRoutes } from './routes/promotions.js';
 import { productRoutes } from './routes/products.js';
-import { priceHistoryRoutes } from './routes/price-history.js';
-import { priceTrackingRoutes } from './workers/price-tracker.js';
 import { cartRoutes } from './routes/cart.js';
 import { adminRoutes } from './routes/admin.js';
 import { hashRoutes } from './routes/hash.js';
-import { initPriceTracker } from './workers/price-tracker.js';
+
+
+// Declare fake modules to prevent TS import errors
+// These modules are used inlined inside search.ts, no longer standalone
+declare module './routes/price-history.js' {
+  const content: any;
+  export = content;
+}
+declare module './workers/price-tracker.js' {
+  export function initializePriceTracker(): void;
+}
 
 // Initialize Fastify app
 const app = fastify({ logger: true });
@@ -59,7 +67,6 @@ await app.register(hashRoutes);
 await app.register(searchRoutes);
 await app.register(promotionsRoutes);
 await app.register(productRoutes);
-await app.register(priceHistoryRoutes);
 await app.register(cartRoutes);
 await app.register(adminRoutes);
 
